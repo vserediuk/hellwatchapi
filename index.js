@@ -5,8 +5,6 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 
-const router = express.Router();
-
 const app = express();
 
 const server = http.createServer(app);
@@ -44,7 +42,7 @@ io.on('connection', (socket) => {
   });
 });
 
-router.get('/iframe', (req, res) => {
+app.get('/iframe', (req, res) => {
   const url = req.query.url;
   axios.get(url)
     .then(response => {
