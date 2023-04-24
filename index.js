@@ -3,12 +3,17 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 const { ExpressPeerServer } = require("peer");
+const cors = require('cors');
 
 app.use(express.static(__dirname + "/public"));
 
 const peerServer = ExpressPeerServer(http, {
   debug: true,
 });
+
+app.use(cors({
+  origin: '*'
+}));
 
 app.use("/peerjs", peerServer);
 
