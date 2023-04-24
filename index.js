@@ -1,65 +1,30 @@
-
-const axios = require('axios');
-
-const cors = require('cors');
-
-const express = require('express');
-const http = require('http');
-const socketIO = require('socket.io');
-
+const express = require("express");
 const app = express();
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
+const { ExpressPeerServer } = require("peer");
 
-app.use(cors({
-  origin: '*'
-}));
+app.use(express.static(__dirname + "/public"));
 
-const server = http.createServer(app);
+const peerServer = ExpressPeerServer(http, {
+  debug: true,
+});
 
-const io = socketIO(server, {
-  cors: {
-    origin: '*',
-  }});
+app.use("/peerjs", peerServer);
 
-const PORT = process.env.PORT || 3001;
+io.on("connection", (socket) => {
+  console.log("a user connected");
 
-let frameSrc = 'https://www.example.com'; // адрес фрейма по умолчанию
-let frameTime = 0; // текущее время фрейма
-
-// обработчик события подключения нового клиента
-io.on('connection', (socket) => {
-  // отправляем текущий адрес фрейма новому клиенту
-  socket.emit('frameSrcChanged', frameSrc);
-
-  // обработчик события изменения адреса фрейма
-  socket.on('frameSrcChanged', async newFrameSrc => {
-    frameSrc = newFrameSrc;
-    io.emit('frameSrcChanged', frameSrc);
+  socket.on("streamUrl", (url) => {
+    console.log("streamUrl", url);
+    io.emit("streamUrl", url);
   });
 
-  // обработчик события загрузки фрейма на клиенте
-  socket.on('frameLoaded', () => {
-    io.emit('frameLoaded'); // оповещаем всех клиентов о загрузке фрейма
-  });
-
-  // обработчик события получения времени фрейма от клиента
-  socket.on('frameTime', (time) => {
-    frameTime = time;
-    io.emit('frameTime', frameTime); // отправляем текущее время фрейма всем клиентам
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
   });
 });
 
-app.get('/iframe', (req, res) => {
-  const url = req.query.url;
-  axios.get(url)
-    .then(response => {
-      res.send(response.data);
-    })
-    .catch(error => {
-      console.log(error);
-      res.status(500).send('Ошибка получения данных');
-    });
-});
-
-server.listen(PORT, function () {
-  console.log('CORS-enabled web server listening on port ' + PORT);
+http.listen(3001, () => {
+  console.log("listening on *:3001");
 });
